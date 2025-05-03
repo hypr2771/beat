@@ -51,7 +51,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                 };
 
                 let src_previous = {
-                    YoutubeDl::new(
+                    YoutubeDl::new_ytdl_like("yt-dlp",
                         http_client.clone(),
                         previous_metadata
                             .clone()
@@ -59,18 +59,26 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                             .ok_or(BeatError::NoPreviousSourceUrl)?,
                     )
                     .user_args(vec![
+                        "-j".into(),
                         "-4".into(),
+                        "-q".into(),
+                        "--no-simulate".into(),
                         "-f".into(),
                         "\"webm[abr>0]/bestaudio/best\"".into(),
                         "-R".into(),
                         "infinite".into(),
+                        "--ignore-config".into(),
+                        "--no-warnings".into(),
                         "--extractor-args".into(),
                         "youtube:player-client=tv".into(),
+                        "--cache-dir".into(),
+                        "./yt-dlp-cache".into(),
                     ])
                 };
 
                 let src = {
-                    YoutubeDl::new(
+                    YoutubeDl::new_ytdl_like(
+                        "yt-dlp",
                         http_client.clone(),
                         current_metadata
                             .clone()
@@ -78,13 +86,20 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                             .ok_or(BeatError::NoCurrentSourceUrl)?,
                     )
                     .user_args(vec![
+                        "-j".into(),
                         "-4".into(),
+                        "-q".into(),
+                        "--no-simulate".into(),
                         "-f".into(),
                         "\"webm[abr>0]/bestaudio/best\"".into(),
                         "-R".into(),
                         "infinite".into(),
+                        "--ignore-config".into(),
+                        "--no-warnings".into(),
                         "--extractor-args".into(),
                         "youtube:player-client=tv".into(),
+                        "--cache-dir".into(),
+                        "./yt-dlp-cache".into(),
                     ])
                 };
 
@@ -131,7 +146,8 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                 };
 
                 let src = {
-                    YoutubeDl::new(
+                    YoutubeDl::new_ytdl_like(
+                        "yt-dlp",
                         http_client.clone(),
                         current_metadata
                             .clone()
@@ -139,13 +155,20 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                             .ok_or(BeatError::NoCurrentSourceUrl)?,
                     )
                     .user_args(vec![
+                        "-j".into(),
                         "-4".into(),
+                        "-q".into(),
+                        "--no-simulate".into(),
                         "-f".into(),
                         "\"webm[abr>0]/bestaudio/best\"".into(),
                         "-R".into(),
                         "infinite".into(),
+                        "--ignore-config".into(),
+                        "--no-warnings".into(),
                         "--extractor-args".into(),
                         "youtube:player-client=tv".into(),
+                        "--cache-dir".into(),
+                        "./yt-dlp-cache".into(),
                     ])
                 };
 

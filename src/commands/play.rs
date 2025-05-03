@@ -182,17 +182,24 @@ async fn insert_track(
     http_client: Client,
 ) -> Result<(), BeatError> {
     let src = if do_search {
-        YoutubeDl::new_search(http_client, url.clone()).user_args(vec![
+        YoutubeDl::new_ytdl_like("yt-dlp", http_client, url.clone()).user_args(vec![
+            "-j".into(),
             "-4".into(),
+            "-q".into(),
+            "--no-simulate".into(),
             "-f".into(),
             "\"webm[abr>0]/bestaudio/best\"".into(),
             "-R".into(),
             "infinite".into(),
+            "--ignore-config".into(),
+            "--no-warnings".into(),
             "--extractor-args".into(),
             "youtube:player-client=tv".into(),
+            "--cache-dir".into(),
+            "./yt-dlp-cache".into(),
         ])
     } else {
-        YoutubeDl::new(http_client, url.clone()).user_args(vec![
+        YoutubeDl::new_ytdl_like("yt-dlp", http_client, url.clone()).user_args(vec![
             "-4".into(),
             "-f".into(),
             "\"webm[abr>0]/bestaudio/best\"".into(),
