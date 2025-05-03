@@ -51,7 +51,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                 };
 
                 let src_previous = {
-                    YoutubeDl::new_ytdl_like("yt-dlp",
+                    YoutubeDl::new(
                         http_client.clone(),
                         previous_metadata
                             .clone()
@@ -77,8 +77,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                 };
 
                 let src = {
-                    YoutubeDl::new_ytdl_like(
-                        "yt-dlp",
+                    YoutubeDl::new(
                         http_client.clone(),
                         current_metadata
                             .clone()
@@ -146,8 +145,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                 };
 
                 let src = {
-                    YoutubeDl::new_ytdl_like(
-                        "yt-dlp",
+                    YoutubeDl::new(
                         http_client.clone(),
                         current_metadata
                             .clone()
