@@ -1,0 +1,9 @@
+/target/
+
+/data/
+
+.env
+
+## Env specific
+.DS_Store
+.idea
