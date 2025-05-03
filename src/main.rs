@@ -77,6 +77,7 @@ impl EventHandler for Handler {
             Command::create_global_command(&ctx.http, commands::next::register()).await,
             Command::create_global_command(&ctx.http, commands::prev::register()).await,
             Command::create_global_command(&ctx.http, commands::repeat::register()).await,
+            Command::create_global_command(&ctx.http, commands::clean::register()).await,
         ];
 
         println!("I created the following global slash command: {guild_command:#?}");
@@ -93,6 +94,7 @@ impl EventHandler for Handler {
                 "next" => commands::next::run(&ctx, &interaction).await,
                 "prev" => commands::prev::run(&ctx, &interaction).await,
                 "loop" => commands::repeat::run(&ctx, &interaction).await,
+                "clean" => commands::clean::run(&ctx, &interaction).await,
                 _ => Err(BeatError::NoValidCommand),
             }
             .map_err(|err| {
@@ -120,6 +122,7 @@ impl EventHandler for Handler {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
+    dotenv::dotenv().ok();
 
     // Configure the client with your Discord bot token in the environment.
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");

@@ -324,8 +324,7 @@ impl EventHandler for OnTrackEnd {
 
                         self.http
                             .delete_message(self.channel_id, message_id, Some("Tracklist ended"))
-                            .await
-                            .unwrap();
+                            .await;
 
                         println!("Tracklist removed for guild {:?}", self.guild_id);
 

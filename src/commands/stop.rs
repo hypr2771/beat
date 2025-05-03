@@ -31,7 +31,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
             if let Some(message_id) = queue.message_id {
                 ctx.http
                     .delete_message(channel_id, MessageId::from(message_id), None)
-                    .await?;
+                    .await;
             }
         }
 

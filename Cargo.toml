@@ -9,6 +9,7 @@ license = "MIT"
 keywords = ["discord", "music-bot", "rust"]
 
 [dependencies]
+dotenv = "0.15.0"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
 tracing-futures = "0.2.5"

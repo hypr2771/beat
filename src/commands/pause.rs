@@ -5,7 +5,7 @@ use serenity::builder::CreateCommand;
 use serenity::client::Context;
 
 pub fn register() -> CreateCommand {
-    CreateCommand::new("loop").description("Toggle loop mode")
+    CreateCommand::new("pause").description("Toggle pause")
 }
 
 pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatError> {
