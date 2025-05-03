@@ -59,6 +59,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                             .ok_or(BeatError::NoPreviousSourceUrl)?,
                     )
                     .user_args(vec![
+                        "-4".into(),
                         "--no-playlist".into(),
                         "--geo-bypass".into(),
                         "-f".into(),
@@ -67,6 +68,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                         "infinite".into(),
                         "--ignore-config".into(),
                         "--no-warnings".into(),
+                        "--no-simulate".into(),
                         "--extractor-args".into(),
                         "youtube:player-client=tv".into(),
                     ])
@@ -81,6 +83,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                             .ok_or(BeatError::NoCurrentSourceUrl)?,
                     )
                     .user_args(vec![
+                        "-4".into(),
                         "--no-playlist".into(),
                         "--geo-bypass".into(),
                         "-f".into(),
@@ -89,6 +92,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                         "infinite".into(),
                         "--ignore-config".into(),
                         "--no-warnings".into(),
+                        "--no-simulate".into(),
                         "--extractor-args".into(),
                         "youtube:player-client=tv".into(),
                     ])
@@ -145,6 +149,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                             .ok_or(BeatError::NoCurrentSourceUrl)?,
                     )
                     .user_args(vec![
+                        "-4".into(),
                         "--no-playlist".into(),
                         "--geo-bypass".into(),
                         "-f".into(),
@@ -153,6 +158,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                         "infinite".into(),
                         "--ignore-config".into(),
                         "--no-warnings".into(),
+                        "--no-simulate".into(),
                         "--extractor-args".into(),
                         "youtube:player-client=tv".into(),
                     ])

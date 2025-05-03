@@ -183,6 +183,7 @@ async fn insert_track(
 ) -> Result<(), BeatError> {
     let src = if do_search {
         YoutubeDl::new_search(http_client, url.clone()).user_args(vec![
+            "-4".into(),
             "--no-playlist".into(),
             "--geo-bypass".into(),
             "-f".into(),
@@ -191,11 +192,13 @@ async fn insert_track(
             "infinite".into(),
             "--ignore-config".into(),
             "--no-warnings".into(),
+            "--no-simulate".into(),
             "--extractor-args".into(),
             "youtube:player-client=tv".into(),
         ])
     } else {
         YoutubeDl::new(http_client, url.clone()).user_args(vec![
+            "-4".into(),
             "--no-playlist".into(),
             "--geo-bypass".into(),
             "-f".into(),
@@ -204,6 +207,7 @@ async fn insert_track(
             "infinite".into(),
             "--ignore-config".into(),
             "--no-warnings".into(),
+            "--no-simulate".into(),
             "--extractor-args".into(),
             "youtube:player-client=tv".into(),
         ])
@@ -650,7 +654,7 @@ pub fn get_short_playlist<'a>(index: usize, data: &'a [String], split: usize) ->
 }
 
 pub async fn ytdl_playlist(uri: String) -> Option<Vec<String>> {
-    let args = vec![uri.as_str(), "--flat-playlist", "-j"];
+    let args = vec![uri.as_str(), "-4", "--flat-playlist", "-j"];
 
     let mut child = Command::new("yt-dlp")
         .args(args)
