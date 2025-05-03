@@ -277,7 +277,7 @@ async fn insert_track(
     // Attach an event handler to see notifications of all track errors.
     let mut handler = handler_lock.lock().await;
 
-    handler.enqueue_with_preload(src.into(), Duration::from_secs(1).into());
+    handler.enqueue_with_preload(src.into(), Duration::from_secs(10).into());
 
     Ok(())
 }
