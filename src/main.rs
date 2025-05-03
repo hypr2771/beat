@@ -16,6 +16,7 @@ mod errors;
 use songbird::SerenityInit;
 use std::collections::HashMap;
 use std::env;
+use std::net::IpAddr;
 use std::sync::Arc;
 
 // YtDl requests need an HTTP client to operate -- we'll create and store our own.
@@ -132,7 +133,7 @@ async fn main() {
     // Build our client.
     let mut client = Client::builder(token, intents)
         .event_handler(Handler)
-        .type_map_insert::<HttpKey>(HttpClient::new())
+        .type_map_insert::<HttpKey>(HttpClient::builder().local_address("0.0.0.0:0".parse::<IpAddr>().unwrap()).build().unwrap())
         .type_map_insert::<QueueKey>(Arc::new(RwLock::new(HashMap::new())))
         .register_songbird()
         .await
