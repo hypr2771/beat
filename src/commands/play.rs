@@ -184,30 +184,20 @@ async fn insert_track(
     let src = if do_search {
         YoutubeDl::new_search(http_client, url.clone()).user_args(vec![
             "-4".into(),
-            "--no-playlist".into(),
-            "--geo-bypass".into(),
             "-f".into(),
             "\"webm[abr>0]/bestaudio/best\"".into(),
             "-R".into(),
             "infinite".into(),
-            "--ignore-config".into(),
-            "--no-warnings".into(),
-            "--no-simulate".into(),
             "--extractor-args".into(),
             "youtube:player-client=tv".into(),
         ])
     } else {
         YoutubeDl::new(http_client, url.clone()).user_args(vec![
             "-4".into(),
-            "--no-playlist".into(),
-            "--geo-bypass".into(),
             "-f".into(),
             "\"webm[abr>0]/bestaudio/best\"".into(),
             "-R".into(),
             "infinite".into(),
-            "--ignore-config".into(),
-            "--no-warnings".into(),
-            "--no-simulate".into(),
             "--extractor-args".into(),
             "youtube:player-client=tv".into(),
         ])

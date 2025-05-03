@@ -60,15 +60,10 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                     )
                     .user_args(vec![
                         "-4".into(),
-                        "--no-playlist".into(),
-                        "--geo-bypass".into(),
                         "-f".into(),
                         "\"webm[abr>0]/bestaudio/best\"".into(),
                         "-R".into(),
                         "infinite".into(),
-                        "--ignore-config".into(),
-                        "--no-warnings".into(),
-                        "--no-simulate".into(),
                         "--extractor-args".into(),
                         "youtube:player-client=tv".into(),
                     ])
@@ -84,15 +79,10 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                     )
                     .user_args(vec![
                         "-4".into(),
-                        "--no-playlist".into(),
-                        "--geo-bypass".into(),
                         "-f".into(),
                         "\"webm[abr>0]/bestaudio/best\"".into(),
                         "-R".into(),
                         "infinite".into(),
-                        "--ignore-config".into(),
-                        "--no-warnings".into(),
-                        "--no-simulate".into(),
                         "--extractor-args".into(),
                         "youtube:player-client=tv".into(),
                     ])
@@ -150,15 +140,10 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                     )
                     .user_args(vec![
                         "-4".into(),
-                        "--no-playlist".into(),
-                        "--geo-bypass".into(),
                         "-f".into(),
                         "\"webm[abr>0]/bestaudio/best\"".into(),
                         "-R".into(),
                         "infinite".into(),
-                        "--ignore-config".into(),
-                        "--no-warnings".into(),
-                        "--no-simulate".into(),
                         "--extractor-args".into(),
                         "youtube:player-client=tv".into(),
                     ])
