@@ -200,9 +200,9 @@ async fn insert_track(
         .collect::<Vec<String>>();
 
     let src = if do_search {
-        YoutubeDl::new(http_client, url.clone())
+        YoutubeDl::new(http_client, url.clone()).user_args(yt_dlp_args)
     } else {
-        YoutubeDl::new(http_client, url.clone())
+        YoutubeDl::new(http_client, url.clone()).user_args(yt_dlp_args)
     };
 
     let metadata = src.clone().aux_metadata().await?.clone();
@@ -458,7 +458,8 @@ mod tests {
     #[tokio::test]
     async fn it_works() {
         let src = ytdl_playlist(
-            "https://www.youtube.com/playlist?list=PLdrfcI54NmaXlCgSsv7VFsYLUJnhSYgVc".into(),
+            "https://www.youtube.com/playlist?list=PLdrfcI54NmaXlCgSsv7VFsYLUJnhSYgVc"
+                .into(),
         )
         .await
         .unwrap();
