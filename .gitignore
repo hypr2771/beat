@@ -4,6 +4,8 @@
 
 .env
 
+yt-dlp-cache/
+
 ## Env specific
 .DS_Store
 .idea

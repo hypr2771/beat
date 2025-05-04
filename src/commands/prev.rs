@@ -4,7 +4,6 @@ use serenity::all::Interaction;
 use serenity::builder::CreateCommand;
 use serenity::client::Context;
 use songbird::input::YoutubeDl;
-use std::env;
 use std::time::Duration;
 
 pub fn register() -> CreateCommand {
@@ -30,12 +29,6 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
         let mut maybe_queue = queue_lock.write().await;
 
         if let Some(existing_queue) = maybe_queue.get_mut(&guild_id) {
-            let yt_dlp_args = env::var("YT_DLP_ARGS")
-                .unwrap()
-                .split(" ")
-                .map(|str| String::from(str))
-                .collect::<Vec<String>>();
-
             if existing_queue.playing_index >= 1 {
                 let current_metadata = existing_queue
                     .queue
@@ -65,7 +58,6 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                             .source_url
                             .ok_or(BeatError::NoPreviousSourceUrl)?,
                     )
-                    .user_args(yt_dlp_args.clone())
                 };
 
                 let src = {
@@ -76,7 +68,6 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                             .source_url
                             .ok_or(BeatError::NoCurrentSourceUrl)?,
                     )
-                    .user_args(yt_dlp_args)
                 };
 
                 // Skips the track
@@ -129,7 +120,6 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                             .source_url
                             .ok_or(BeatError::NoCurrentSourceUrl)?,
                     )
-                    .user_args(yt_dlp_args)
                 };
 
                 let manager = songbird::get(ctx).await.ok_or(BeatError::NoSongbird)?;
