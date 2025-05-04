@@ -66,7 +66,8 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
         ctx.http
             .delete_messages(channel_id, &json, Some("Old messages"))
             .await
-            .map_err(|error| error!(?error, "Failed to delete all messages"));
+            .map_err(|error| error!(?error, "Failed to delete all messages"))
+            .unwrap_or_default();
     }
 
     if let Interaction::Command(command) = interaction {

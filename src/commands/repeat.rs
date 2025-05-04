@@ -1,8 +1,9 @@
 use crate::QueueKey;
+use crate::errors::errors::BeatError;
+use crate::messages::messages::to_embed;
 use serenity::all::Interaction;
 use serenity::builder::CreateCommand;
 use serenity::client::Context;
-use crate::errors::errors::BeatError;
 
 pub fn register() -> CreateCommand {
     CreateCommand::new("loop").description("Toggle loop mode")
@@ -11,11 +12,17 @@ pub fn register() -> CreateCommand {
 pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatError> {
     if let Some((guild_id, channel_id)) = if let Interaction::Command(command) = interaction {
         command.defer_ephemeral(ctx).await?;
-        Some((command.guild_id.ok_or(BeatError::NoGuild)?, command.channel_id))
+        Some((
+            command.guild_id.ok_or(BeatError::NoGuild)?,
+            command.channel_id,
+        ))
     } else if let Interaction::Component(component) = interaction {
         component.defer_ephemeral(ctx).await?;
         component.delete_response(ctx).await?;
-        Some((component.guild_id.ok_or(BeatError::NoGuild)?, component.channel_id))
+        Some((
+            component.guild_id.ok_or(BeatError::NoGuild)?,
+            component.channel_id,
+        ))
     } else {
         None
     } {
@@ -31,7 +38,10 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
             queue.repeat = !queue.repeat;
 
             // Get Songbird
-            let manager = songbird::get(ctx).await.ok_or(BeatError::NoSongbird)?.clone();
+            let manager = songbird::get(ctx)
+                .await
+                .ok_or(BeatError::NoSongbird)?
+                .clone();
             let handler_lock = manager.get(guild_id).ok_or(BeatError::NoManager)?;
 
             // Enable loop
@@ -55,12 +65,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
 
             if let Some(message_id) = queue.message_id {
                 ctx.http
-                    .edit_message(
-                        channel_id,
-                        message_id,
-                        &crate::commands::play::to_embed(queue),
-                        vec![],
-                    )
+                    .edit_message(channel_id, message_id, &to_embed(queue), vec![])
                     .await?;
             }
         }
@@ -70,6 +75,6 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
         // Delete ephemeral response
         command.delete_response(ctx).await?;
     }
-    
+
     Ok(())
 }

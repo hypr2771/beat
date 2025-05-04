@@ -1,4 +1,5 @@
 use crate::errors::errors::BeatError;
+use crate::messages::messages::to_embed;
 use crate::{HttpKey, Queue, QueueKey};
 use reqwest::Client;
 use serenity::all::{ChannelId, GuildId, Interaction};
@@ -6,12 +7,12 @@ use serenity::async_trait;
 use serenity::builder::{CreateCommand, CreateCommandOption};
 use serenity::client::Context;
 use serenity::http::Http;
-use serenity::json::{Value, json};
+use serenity::json::Value;
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
 use serenity::prelude::TypeMap;
 use songbird::input::{Compose, YoutubeDl};
-use songbird::{Call, Event, EventContext, EventHandler, SongbirdKey, TrackEvent};
-use std::cmp::{max, min};
+use songbird::{Call, Event, EventContext, EventHandler, Songbird, SongbirdKey, TrackEvent};
+use std::env;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use std::sync::Arc;
@@ -90,29 +91,7 @@ pub async fn run(
             let manager = songbird::get(ctx).await.ok_or(BeatError::NoSongbird)?;
 
             if let None = manager.get(guild_id) {
-                let lock = manager.join(guild_id, to_connect).await?;
-                let copy = lock.clone();
-                let mut handler = copy.lock().await;
-                handler.remove_all_global_events();
-                handler.add_global_event(TrackEvent::Error.into(), TrackErrorNotifier);
-                handler.add_global_event(
-                    TrackEvent::End.into(),
-                    OnTrackEnd {
-                        guild_id,
-                        channel_id: channel_id,
-                        data: ctx.clone().data,
-                        http: ctx.clone().http,
-                    },
-                );
-                handler.add_global_event(
-                    TrackEvent::Play.into(),
-                    OnTrackStart {
-                        guild_id,
-                        channel_id: channel_id,
-                        data: ctx.clone().data,
-                        http: ctx.clone().http,
-                    },
-                );
+                connect_and_handle(ctx, guild_id, channel_id, to_connect, &manager).await?;
             };
 
             let do_search = !url.starts_with("http");
@@ -172,6 +151,39 @@ pub async fn run(
     Ok(())
 }
 
+async fn connect_and_handle(
+    ctx: &Context,
+    guild_id: GuildId,
+    channel_id: ChannelId,
+    to_connect: ChannelId,
+    manager: &Arc<Songbird>,
+) -> Result<(), BeatError> {
+    let lock = manager.join(guild_id, to_connect).await?;
+    let copy = lock.clone();
+    let mut handler = copy.lock().await;
+    handler.remove_all_global_events();
+    handler.add_global_event(TrackEvent::Error.into(), TrackErrorNotifier);
+    handler.add_global_event(
+        TrackEvent::End.into(),
+        OnTrackEnd {
+            guild_id,
+            channel_id: channel_id,
+            data: ctx.clone().data,
+            http: ctx.clone().http,
+        },
+    );
+    handler.add_global_event(
+        TrackEvent::Play.into(),
+        OnTrackStart {
+            guild_id,
+            channel_id: channel_id,
+            data: ctx.clone().data,
+            http: ctx.clone().http,
+        },
+    );
+    Ok(())
+}
+
 async fn insert_track(
     ctx: &Context,
     guild_id: GuildId,
@@ -181,33 +193,16 @@ async fn insert_track(
     do_search: bool,
     http_client: Client,
 ) -> Result<(), BeatError> {
+    let yt_dlp_args = env::var("YT_DLP_ARGS")
+        .unwrap()
+        .split(" ")
+        .map(|str| String::from(str))
+        .collect::<Vec<String>>();
+
     let src = if do_search {
-        YoutubeDl::new(http_client, url.clone()).user_args(vec![
-            "-j".into(),
-            "-4".into(),
-            "-q".into(),
-            "--no-simulate".into(),
-            "-f".into(),
-            "\"webm[abr>0]/bestaudio/best\"".into(),
-            "-R".into(),
-            "infinite".into(),
-            "--ignore-config".into(),
-            "--no-warnings".into(),
-            "--extractor-args".into(),
-            "youtube:player-client=tv".into(),
-            "--cache-dir".into(),
-            "./yt-dlp-cache".into(),
-        ])
+        YoutubeDl::new(http_client, url.clone()).user_args(yt_dlp_args)
     } else {
-        YoutubeDl::new(http_client, url.clone()).user_args(vec![
-            "-4".into(),
-            "-f".into(),
-            "\"webm[abr>0]/bestaudio/best\"".into(),
-            "-R".into(),
-            "infinite".into(),
-            "--extractor-args".into(),
-            "youtube:player-client=tv".into(),
-        ])
+        YoutubeDl::new(http_client, url.clone()).user_args(yt_dlp_args)
     };
 
     let metadata = src.clone().aux_metadata().await?.clone();
@@ -325,7 +320,8 @@ impl EventHandler for OnTrackEnd {
 
                         self.http
                             .delete_message(self.channel_id, message_id, Some("Tracklist ended"))
-                            .await;
+                            .await
+                            .unwrap_or_default();
 
                         println!("Tracklist removed for guild {:?}", self.guild_id);
 
@@ -425,229 +421,6 @@ impl EventHandler for OnTrackStart {
         }
         None
     }
-}
-
-pub(crate) fn to_embed(queue: &Queue) -> Value {
-    let whole_queue = queue.queue.clone();
-    let loop_mode = if queue.repeat { 3 } else { 2 };
-    let (pause_mode, pause_button) = if queue.pause {
-        (3, "▶️")
-    } else {
-        (1, "⏸️")
-    };
-    let current_track = whole_queue.get(queue.playing_index).unwrap().clone();
-    let title = current_track.title.unwrap();
-    let artist = current_track.artist.unwrap();
-    let duration = readable_duration(current_track.duration.unwrap());
-    let link = current_track.source_url.unwrap();
-    let thumbnail = current_track.thumbnail.unwrap();
-    let (played, to_play) = whole_queue.split_at(queue.playing_index);
-
-    let time_to_play = readable_duration(
-        to_play
-            .iter()
-            .map(|played| played.duration.unwrap())
-            .fold(Duration::from_secs(0), |acc, duration| acc + duration),
-    );
-    let time_elapsed = played
-        .iter()
-        .map(|played| played.duration.unwrap())
-        .fold(Duration::from_secs(0), |acc, duration| acc + duration);
-    let total_time = whole_queue
-        .iter()
-        .map(|played| played.duration.unwrap())
-        .fold(Duration::from_secs(0), |acc, duration| acc + duration);
-
-    let elapsed_over_total = readable_elapsed(time_elapsed, total_time);
-
-    let short_queue: Vec<String> = queue
-        .queue
-        .iter()
-        .map(|track| {
-            format!(
-                "{} ({}) - {}",
-                track.title.clone().unwrap(),
-                readable_duration(track.duration.unwrap()),
-                track.artist.clone().unwrap()
-            )
-        })
-        .collect();
-
-    let short = get_short_playlist(queue.playing_index, &short_queue, 2).join("\n");
-
-    let json = json!({
-      "embeds": [
-        {
-          "author": {
-            "name": "🔊 Now playing"
-          },
-          "title": format!("**{} ({}) - {}**", title, duration, artist),
-          "description": short,
-          "url": link,
-          "thumbnail": {
-            "url": thumbnail,
-          },
-          "footer": {
-            "text": format!("{} of {} tracks - {} ({} left)", queue.playing_index + 1, whole_queue.len(), elapsed_over_total, time_to_play),
-          }
-        }
-      ],
-      "components": [
-        {
-          "type": 1,
-          "components": [
-            {
-              "type": 2,
-              "emoji": {
-                "name": "⏮"
-              },
-              "style": 2,
-              "custom_id": "prev"
-            },
-            {
-              "type": 2,
-              "emoji": {
-                "name": "⏹"
-              },
-              "style": 4,
-              "custom_id": "stop"
-            },
-            {
-              "type": 2,
-              "emoji": {
-                "name": pause_button
-              },
-              "style": pause_mode,
-              "custom_id": "pause"
-            },
-            {
-              "type": 2,
-              "emoji": {
-                "name": "⏭"
-              },
-              "style": 2,
-              "custom_id": "next"
-            },
-            {
-              "type": 2,
-              "emoji": {
-                "name": "🔁"
-              },
-              "style": loop_mode,
-              "custom_id": "loop"
-            }
-          ]
-        }
-      ]
-    });
-
-    json
-}
-
-fn readable_duration(duration: Duration) -> String {
-    let seconds = duration.as_secs() % 60;
-    let minutes = (duration.as_secs() / 60) % 60;
-    let hours = (duration.as_secs() / 60) / 60;
-
-    let mut parts = Vec::new();
-
-    if hours > 0 {
-        parts.push(format!("{:0>2}", hours));
-    }
-    if minutes > 0 {
-        parts.push(format!("{:0>2}", minutes));
-    }
-    parts.push(format!("{:0>2}", seconds));
-
-    parts.join(":")
-}
-
-fn readable_elapsed(elapsed: Duration, total: Duration) -> String {
-    let seconds_total = total.as_secs() % 60;
-    let minutes_total = (total.as_secs() / 60) % 60;
-    let hours_total = (total.as_secs() / 60) / 60;
-    let seconds_elapsed = elapsed.as_secs() % 60;
-    let minutes_elapsed = (elapsed.as_secs() / 60) % 60;
-    let hours_elapsed = (elapsed.as_secs() / 60) / 60;
-
-    let mut parts_total = Vec::new();
-    let mut parts_elapsed = Vec::new();
-
-    if hours_total > 0 {
-        parts_total.push(format!("{:0>2}", hours_total));
-        parts_elapsed.push(format!("{:0>2}", hours_elapsed));
-    }
-    if minutes_total > 0 || hours_total > 0 {
-        parts_total.push(format!("{:0>2}", minutes_total));
-        parts_elapsed.push(format!("{:0>2}", minutes_elapsed));
-    }
-    parts_total.push(format!("{:0>2}", seconds_total));
-    parts_elapsed.push(format!("{:0>2}", seconds_elapsed));
-
-    format!("{}/{}", parts_elapsed.join(":"), parts_total.join(":"))
-}
-
-pub fn get_short_playlist<'a>(index: usize, data: &'a [String], split: usize) -> Vec<String> {
-    let len = data.len();
-    if len == 0 {
-        return vec![];
-    }
-
-    let mut result: Vec<String> = Vec::new();
-
-    // If there is less to display than the minimum, display all
-    if data.len() <= split * 2 + 1 {
-        for i in 0..data.len() {
-            if i == index {
-                result.push(format!("▶️ {}. {}", i + 1, data[i]));
-            } else {
-                result.push(format!("- {}. {}", i + 1, data[i]));
-            }
-        }
-
-        return result;
-    }
-
-    // [ - - - b = 2 - i - a = 2 - - - ]
-    // [ i - - - a'=b+a= 4 - - - - - - ]
-
-    let mut before = split;
-    let mut after = split;
-
-    // Readjust before
-    if (index.checked_sub(before)).is_none() {
-        after = before - index + after;
-        before = index;
-    }
-
-    // Readjust after
-    if (index + after) >= data.len() - 1 {
-        before = after - (data.len() - 1 - index) + before;
-        after = data.len() - 1 - index;
-    }
-
-    // Pick elements before the index
-    if index > 0 && before > 0 {
-        result.push(format!("- {}. {}", 1, &data[0]));
-
-        for i in max(index - before, 1)..index {
-            result.push(format!("- {}. {}", i + 1, &data[i]));
-        }
-    }
-
-    // Pick the element at the index if not 0
-    result.push(format!("▶️ {}. {}", index + 1, &data[index]));
-
-    // Pick elements before the index
-    if index < data.len() - 1 && after < data.len() - 1 {
-        for i in index + 1..min(index + after + 1, data.len() - 1) {
-            result.push(format!("- {}. {}", i + 1, &data[i]));
-        }
-
-        result.push(format!("- {}. {}", data.len(), &data[data.len() - 1]));
-    }
-
-    result
 }
 
 pub async fn ytdl_playlist(uri: String) -> Option<Vec<String>> {

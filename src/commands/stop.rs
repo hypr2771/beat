@@ -1,8 +1,8 @@
 use crate::QueueKey;
+use crate::errors::errors::BeatError;
 use serenity::all::{Interaction, MessageId};
 use serenity::builder::CreateCommand;
 use serenity::client::Context;
-use crate::errors::errors::BeatError;
 
 pub fn register() -> CreateCommand {
     CreateCommand::new("stop").description("Stops and disconnects Beat")
@@ -11,11 +11,17 @@ pub fn register() -> CreateCommand {
 pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatError> {
     if let Some((guild_id, channel_id)) = if let Interaction::Command(command) = interaction {
         command.defer_ephemeral(ctx).await?;
-        Some((command.guild_id.ok_or(BeatError::NoGuild)?, command.channel_id))
+        Some((
+            command.guild_id.ok_or(BeatError::NoGuild)?,
+            command.channel_id,
+        ))
     } else if let Interaction::Component(component) = interaction {
         component.defer_ephemeral(ctx).await?;
         component.delete_response(ctx).await?;
-        Some((component.guild_id.ok_or(BeatError::NoGuild)?, component.channel_id))
+        Some((
+            component.guild_id.ok_or(BeatError::NoGuild)?,
+            component.channel_id,
+        ))
     } else {
         None
     } {
@@ -31,7 +37,8 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
             if let Some(message_id) = queue.message_id {
                 ctx.http
                     .delete_message(channel_id, MessageId::from(message_id), None)
-                    .await;
+                    .await
+                    .unwrap_or_default();
             }
         }
 
@@ -39,7 +46,10 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
         maybe_queue.remove(&guild_id);
 
         // Disconnect and clear Songbird for the guild
-        let manager = songbird::get(ctx).await.ok_or(BeatError::NoSongbird)?.clone();
+        let manager = songbird::get(ctx)
+            .await
+            .ok_or(BeatError::NoSongbird)?
+            .clone();
         manager.remove(guild_id).await?;
     }
 
@@ -47,6 +57,6 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
         // Delete ephemeral response
         command.delete_response(ctx).await?;
     }
-    
+
     Ok(())
 }
