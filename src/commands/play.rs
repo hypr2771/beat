@@ -193,16 +193,39 @@ async fn insert_track(
     do_search: bool,
     http_client: Client,
 ) -> Result<(), BeatError> {
-    let yt_dlp_args = env::var("YT_DLP_ARGS")
-        .unwrap()
-        .split(" ")
-        .map(|str| String::from(str))
-        .collect::<Vec<String>>();
+    // let yt_dlp_args = env::var("YT_DLP_ARGS")
+    //     .unwrap()
+    //     .split(" ")
+    //     .map(|str| String::from(str))
+    //     .collect::<Vec<String>>();
 
     let src = if do_search {
-        YoutubeDl::new(http_client, url.clone()).user_args(yt_dlp_args)
+        YoutubeDl::new(http_client, url.clone()).user_args(vec![
+            "-j".into(),
+            "-4".into(),
+            "-q".into(),
+            "--no-simulate".into(),
+            "-f".into(),
+            "\"webm[abr>0]/bestaudio/best\"".into(),
+            "-R".into(),
+            "infinite".into(),
+            "--ignore-config".into(),
+            "--no-warnings".into(),
+            "--extractor-args".into(),
+            "youtube:player-client=tv".into(),
+            "--cache-dir".into(),
+            "./yt-dlp-cache".into(),
+        ])
     } else {
-        YoutubeDl::new(http_client, url.clone()).user_args(yt_dlp_args)
+        YoutubeDl::new(http_client, url.clone()).user_args(vec![
+            "-4".into(),
+            "-f".into(),
+            "\"webm[abr>0]/bestaudio/best\"".into(),
+            "-R".into(),
+            "infinite".into(),
+            "--extractor-args".into(),
+            "youtube:player-client=tv".into(),
+        ])
     };
 
     let metadata = src.clone().aux_metadata().await?.clone();
@@ -458,8 +481,7 @@ mod tests {
     #[tokio::test]
     async fn it_works() {
         let src = ytdl_playlist(
-            "https://www.youtube.com/playlist?list=PLdrfcI54NmaXlCgSsv7VFsYLUJnhSYgVc"
-                .into(),
+            "https://www.youtube.com/playlist?list=PLdrfcI54NmaXlCgSsv7VFsYLUJnhSYgVc".into(),
         )
         .await
         .unwrap();
