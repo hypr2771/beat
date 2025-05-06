@@ -200,21 +200,14 @@ async fn insert_track(
     //     .collect::<Vec<String>>();
 
     let src = if do_search {
-        YoutubeDl::new(http_client, url.clone()).user_args(vec![
-            "-j".into(),
+        YoutubeDl::new_search(http_client, url.clone()).user_args(vec![
             "-4".into(),
-            "-q".into(),
-            "--no-simulate".into(),
             "-f".into(),
             "\"webm[abr>0]/bestaudio/best\"".into(),
             "-R".into(),
             "infinite".into(),
-            "--ignore-config".into(),
-            "--no-warnings".into(),
             "--extractor-args".into(),
             "youtube:player-client=tv".into(),
-            "--cache-dir".into(),
-            "./yt-dlp-cache".into(),
         ])
     } else {
         YoutubeDl::new(http_client, url.clone()).user_args(vec![
