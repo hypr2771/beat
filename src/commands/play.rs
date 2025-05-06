@@ -12,7 +12,6 @@ use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedVa
 use serenity::prelude::TypeMap;
 use songbird::input::{Compose, YoutubeDl};
 use songbird::{Call, Event, EventContext, EventHandler, Songbird, SongbirdKey, TrackEvent};
-use std::env;
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 use std::sync::Arc;
@@ -92,6 +91,54 @@ pub async fn run(
 
             if let None = manager.get(guild_id) {
                 connect_and_handle(ctx, guild_id, channel_id, to_connect, &manager).await?;
+
+                let queue_lock = {
+                    let guard = ctx.data.read().await;
+                    guard.get::<QueueKey>().unwrap().clone()
+                };
+
+                let mut maybe_queue = queue_lock.write().await;
+
+                if let Some(existing_queue) = maybe_queue.get_mut(&guild_id) {
+                    println!(
+                        "Queue already exists while joining channel: {:?}, clearing previous state",
+                        existing_queue
+                    );
+
+                    if let Some(message_id) = existing_queue.message_id {
+                        println!(
+                            "Deleting message at channel {} with ID {}",
+                            channel_id, message_id
+                        );
+
+                        ctx.http
+                            .delete_message(channel_id, message_id, Some("Tracklist ended"))
+                            .await
+                            .unwrap_or_default();
+                    }
+
+                    println!("Removing tracklist for guild {:?}", guild_id);
+
+                    // Disconnect and clear Songbird for the guild
+                    let manager_lock = {
+                        let guard = ctx.data.read().await;
+                        guard.get::<SongbirdKey>().unwrap().clone()
+                    };
+
+                    // Disconnect and clear Songbird for the guild
+                    manager_lock
+                        .get(guild_id)
+                        .unwrap()
+                        .lock()
+                        .await
+                        .queue()
+                        .stop();
+
+                    println!("Tracklist removed for guild {:?}", guild_id);
+
+                    // Remove local data
+                    maybe_queue.remove(&guild_id);
+                }
             };
 
             let do_search = !url.starts_with("http");
