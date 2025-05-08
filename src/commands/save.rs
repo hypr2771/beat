@@ -32,18 +32,12 @@ pub async fn run(
         ..
     }) = options.first()
     {
-        if let Some((guild_id, channel_id, user_id)) =
-            if let Interaction::Command(command) = interaction {
-                command.defer_ephemeral(ctx).await?;
-                Some((
-                    command.guild_id.ok_or(BeatError::NoGuild)?,
-                    command.channel_id,
-                    command.user.id,
-                ))
-            } else {
-                None
-            }
-        {
+        if let Some(guild_id) = if let Interaction::Command(command) = interaction {
+            command.defer_ephemeral(ctx).await?;
+            Some(command.guild_id.ok_or(BeatError::NoGuild)?)
+        } else {
+            None
+        } {
             let queue_lock = {
                 let guard = ctx.data.read().await;
                 guard.get::<QueueKey>().unwrap().clone()

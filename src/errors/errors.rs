@@ -41,37 +41,43 @@ impl Display for BeatError {
 impl Error for BeatError {}
 
 impl From<std::io::Error> for BeatError {
-    fn from(_: std::io::Error) -> Self {
+    fn from(why: std::io::Error) -> Self {
+        eprintln!("{:?}", why);
         Self::Other("JSON error")
     }
 }
 
 impl From<AudioStreamError> for BeatError {
-    fn from(_: AudioStreamError) -> Self {
+    fn from(why: AudioStreamError) -> Self {
+        eprintln!("{:?}", why);
         Self::Other("Audio stream error")
     }
 }
 
 impl From<SerenityError> for BeatError {
     fn from(why: SerenityError) -> Self {
+        eprintln!("{:?}", why);
         Self::Other("Serenity error")
     }
 }
 
 impl From<JoinError> for BeatError {
-    fn from(_: JoinError) -> Self {
+    fn from(why: JoinError) -> Self {
+        eprintln!("{:?}", why);
         Self::Other("Could not join channel")
     }
 }
 
 impl From<ParseError> for BeatError {
-    fn from(_: ParseError) -> Self {
+    fn from(why: ParseError) -> Self {
+        eprintln!("{:?}", why);
         Self::Other("Could not parse URL")
     }
 }
 
 impl From<ControlError> for BeatError {
-    fn from(_: ControlError) -> Self {
+    fn from(why: ControlError) -> Self {
+        eprintln!("{:?}", why);
         Self::Other("Could not run control")
     }
 }

@@ -9,18 +9,15 @@ pub fn register() -> CreateCommand {
 }
 
 pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatError> {
-    if let Some((guild_id, channel_id, user_id)) =
-        if let Interaction::Command(command) = interaction {
-            command.defer_ephemeral(ctx).await?;
-            Some((
-                command.guild_id.ok_or(BeatError::NoGuild)?,
-                command.channel_id,
-                command.user.id,
-            ))
-        } else {
-            None
-        }
-    {
+    if let Some((guild_id, channel_id)) = if let Interaction::Command(command) = interaction {
+        command.defer_ephemeral(ctx).await?;
+        Some((
+            command.guild_id.ok_or(BeatError::NoGuild)?,
+            command.channel_id,
+        ))
+    } else {
+        None
+    } {
         let dir_name = format!("./{}", guild_id);
         create_dir_all(dir_name.clone())?;
 
@@ -32,12 +29,22 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                 collected = format!(
                     "{}\n- {}",
                     collected,
-                    path.file_name().unwrap().to_str().unwrap().split(".").nth(0).unwrap()
+                    path.file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .split(".")
+                        .nth(0)
+                        .unwrap()
                 );
             }
         }
 
-        let body = format!("{}{}", collected, if collected.len() == 0 { "_None_" } else { "" });
+        let body = format!(
+            "{}{}",
+            collected,
+            if collected.len() == 0 { "_None_" } else { "" }
+        );
 
         let json = json!({"embeds": [
           {
