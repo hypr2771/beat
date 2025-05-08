@@ -3,6 +3,7 @@ use serde_json::json;
 use serenity::all::{Context, CreateCommand, Interaction};
 use std::fs;
 use std::fs::create_dir_all;
+use std::io::BufRead;
 
 pub fn register() -> CreateCommand {
     CreateCommand::new("list").description("Lists the available playlists")
@@ -26,8 +27,11 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
             let entry = entry?;
             let path = entry.path();
             if path.is_file() {
+
+                let track_count = fs::read(path.clone())?.lines().count();
+
                 collected = format!(
-                    "{}\n- {}",
+                    "{}\n- {} ({} tracks)",
                     collected,
                     path.file_name()
                         .unwrap()
@@ -35,7 +39,8 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                         .unwrap()
                         .split(".")
                         .nth(0)
-                        .unwrap()
+                        .unwrap(),
+                    track_count
                 );
             }
         }
