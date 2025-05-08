@@ -112,7 +112,7 @@ pub async fn run(
                         );
 
                         ctx.http
-                            .delete_message(channel_id, message_id, Some("Tracklist ended"))
+                            .delete_message(channel_id, message_id, Some("Dangling message"))
                             .await
                             .unwrap_or_default();
                     }
@@ -198,7 +198,7 @@ pub async fn run(
     Ok(())
 }
 
-async fn connect_and_handle(
+pub async fn connect_and_handle(
     ctx: &Context,
     guild_id: GuildId,
     channel_id: ChannelId,
@@ -231,7 +231,7 @@ async fn connect_and_handle(
     Ok(())
 }
 
-async fn insert_track(
+pub async fn insert_track(
     ctx: &Context,
     guild_id: GuildId,
     channel_id: ChannelId,

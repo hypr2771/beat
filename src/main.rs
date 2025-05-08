@@ -80,6 +80,9 @@ impl EventHandler for Handler {
             Command::create_global_command(&ctx.http, commands::next::register()).await,
             Command::create_global_command(&ctx.http, commands::prev::register()).await,
             Command::create_global_command(&ctx.http, commands::repeat::register()).await,
+            Command::create_global_command(&ctx.http, commands::save::register()).await,
+            Command::create_global_command(&ctx.http, commands::load::register()).await,
+            Command::create_global_command(&ctx.http, commands::list::register()).await,
             Command::create_global_command(&ctx.http, commands::clean::register()).await,
         ];
 
@@ -97,13 +100,17 @@ impl EventHandler for Handler {
                 "next" => commands::next::run(&ctx, &interaction).await,
                 "prev" => commands::prev::run(&ctx, &interaction).await,
                 "loop" => commands::repeat::run(&ctx, &interaction).await,
+                "save" => commands::save::run(&ctx, &interaction, &command.data.options()).await,
+                "load" => commands::load::run(&ctx, &interaction, &command.data.options()).await,
+                "list" => commands::list::run(&ctx, &interaction).await,
                 "clean" => commands::clean::run(&ctx, &interaction).await,
                 _ => Err(BeatError::NoValidCommand),
             }
             .map_err(|err| {
                 eprintln!("{:?}", err);
                 ()
-            }).unwrap_or(());
+            })
+            .unwrap_or(());
         } else if let Interaction::Component(command) = interaction_clone {
             match command.data.custom_id.as_str() {
                 "pause" => commands::pause::run(&ctx, &interaction).await,
@@ -116,7 +123,8 @@ impl EventHandler for Handler {
             .map_err(|err| {
                 eprintln!("{:?}", err);
                 ()
-            }).unwrap_or(());
+            })
+            .unwrap_or(());
         } else {
         }
     }
@@ -135,7 +143,12 @@ async fn main() {
     // Build our client.
     let mut client = Client::builder(token, intents)
         .event_handler(Handler)
-        .type_map_insert::<HttpKey>(HttpClient::builder().local_address(IpAddr::from_str("0.0.0.0").unwrap()).build().unwrap())
+        .type_map_insert::<HttpKey>(
+            HttpClient::builder()
+                .local_address(IpAddr::from_str("0.0.0.0").unwrap())
+                .build()
+                .unwrap(),
+        )
         .type_map_insert::<QueueKey>(Arc::new(RwLock::new(HashMap::new())))
         .register_songbird()
         .await

@@ -5,3 +5,6 @@ pub(crate) mod play;
 pub(crate) mod prev;
 pub(crate) mod repeat;
 pub(crate) mod stop;
+pub(crate) mod save;
+pub(crate) mod load;
+pub(crate) mod list;

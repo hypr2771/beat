@@ -53,7 +53,7 @@ impl From<AudioStreamError> for BeatError {
 }
 
 impl From<SerenityError> for BeatError {
-    fn from(_: SerenityError) -> Self {
+    fn from(why: SerenityError) -> Self {
         Self::Other("Serenity error")
     }
 }

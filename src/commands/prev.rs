@@ -1,4 +1,3 @@
-use std::env;
 use crate::errors::errors::BeatError;
 use crate::{HttpKey, QueueKey};
 use serenity::all::Interaction;
@@ -50,7 +49,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                     let data = ctx.data.read().await;
                     data.get::<HttpKey>().cloned().ok_or(BeatError::NoHttp)?
                 };
-                
+
                 let src_previous = {
                     YoutubeDl::new(
                         http_client.clone(),
