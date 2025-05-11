@@ -53,6 +53,8 @@ pub async fn run(
     interaction: &Interaction,
     options: &[ResolvedOption<'_>],
 ) -> Result<(), BeatError> {
+    let mut should_delete = true;
+
     if let Some(ResolvedOption {
         value: ResolvedValue::String(url),
         ..
@@ -137,7 +139,10 @@ pub async fn run(
                     println!("Tracklist removed for guild {:?}", guild_id);
 
                     // Remove local data
-                    maybe_queue.remove(&guild_id);
+                    maybe_queue
+                        .get_mut(&guild_id)
+                        .ok_or(BeatError::NoQueue)?
+                        .reset_for_play();
                 }
             };
 
@@ -158,39 +163,48 @@ pub async fn run(
                     .map(|(_, value)| value.parse::<usize>().unwrap_or(1))
                     .unwrap_or(1);
 
-                for url in ytdl_playlist(url.clone())
+                let playlist = ytdl_playlist(url.clone())
                     .await
                     .ok_or(BeatError::Other("Empty playlist"))?
-                    .split_off(index - 1)
-                {
-                    insert_track(
+                    .split_off(index - 1);
+
+                for i in 0..playlist.len() {
+                    should_delete = insert_track(
                         ctx,
+                        interaction,
                         guild_id,
                         channel_id,
-                        url,
+                        playlist[i].clone(),
                         manager.get(guild_id).ok_or(BeatError::NoManager)?,
                         false,
+                        i == 0,
                         http_client.clone(),
                     )
                     .await
                     // Ignore error in a playlist, keep loading next ones
-                    .unwrap_or(());
+                    .unwrap_or(true);
                 }
             } else {
-                insert_track(
+                should_delete = insert_track(
                     ctx,
+                    interaction,
                     guild_id,
                     channel_id,
                     url,
                     manager.get(guild_id).ok_or(BeatError::NoManager)?,
                     do_search,
+                    true,
                     http_client.clone(),
                 )
-                .await?;
+                .await
+                .unwrap_or(true);
             }
         }
-        if let Interaction::Command(command) = interaction {
-            // Delete ephemeral response
+    }
+
+    if let Interaction::Command(command) = interaction {
+        // Delete ephemeral response
+        if (should_delete) {
             command.delete_response(ctx).await?;
         }
     }
@@ -233,42 +247,20 @@ pub async fn connect_and_handle(
 
 pub async fn insert_track(
     ctx: &Context,
+    interaction: &Interaction,
     guild_id: GuildId,
     channel_id: ChannelId,
     url: String,
     handler_lock: Arc<Mutex<Call>>,
     do_search: bool,
+    should_delete: bool,
     http_client: Client,
-) -> Result<(), BeatError> {
+) -> Result<bool, BeatError> {
     // let yt_dlp_args = env::var("YT_DLP_ARGS")
     //     .unwrap()
     //     .split(" ")
     //     .map(|str| String::from(str))
     //     .collect::<Vec<String>>();
-
-    let src = if do_search {
-        YoutubeDl::new_search(http_client, url.clone()).user_args(vec![
-            "-4".into(),
-            "-f".into(),
-            "\"webm[abr>0]/bestaudio/best\"".into(),
-            "-R".into(),
-            "infinite".into(),
-            "--extractor-args".into(),
-            "youtube:player-client=tv".into(),
-        ])
-    } else {
-        YoutubeDl::new(http_client, url.clone()).user_args(vec![
-            "-4".into(),
-            "-f".into(),
-            "\"webm[abr>0]/bestaudio/best\"".into(),
-            "-R".into(),
-            "infinite".into(),
-            "--extractor-args".into(),
-            "youtube:player-client=tv".into(),
-        ])
-    };
-
-    let metadata = src.clone().aux_metadata().await?.clone();
 
     let queue_lock = {
         let guard = ctx.data.read().await;
@@ -278,66 +270,71 @@ pub async fn insert_track(
     let mut maybe_queue = queue_lock.write().await;
 
     if let Some(existing_queue) = maybe_queue.get_mut(&guild_id) {
-        if let Some(message_id) = existing_queue.message_id {
-            existing_queue.queue.push(metadata);
-
-            let _ = ctx
-                .http
-                .edit_message(channel_id, message_id, &to_embed(&existing_queue), vec![])
-                .await?;
-        } else {
-            let queue = Queue {
-                did_skip: false,
-                repeat: false,
-                pause: false,
-                playing_index: 0,
-                message_id: None,
-                queue: vec![metadata],
+        if !existing_queue.stopping {
+            let src = if do_search {
+                YoutubeDl::new_search(http_client, url.clone()).user_args(vec![
+                    "-4".into(),
+                    "-f".into(),
+                    "\"webm[abr>0]/bestaudio/best\"".into(),
+                    "-R".into(),
+                    "infinite".into(),
+                    "--extractor-args".into(),
+                    "youtube:player-client=tv".into(),
+                ])
+            } else {
+                YoutubeDl::new(http_client, url.clone()).user_args(vec![
+                    "-4".into(),
+                    "-f".into(),
+                    "\"webm[abr>0]/bestaudio/best\"".into(),
+                    "-R".into(),
+                    "infinite".into(),
+                    "--extractor-args".into(),
+                    "youtube:player-client=tv".into(),
+                ])
             };
 
-            let message = ctx
-                .http
-                .send_message(channel_id, vec![], &to_embed(&queue))
-                .await?;
+            let metadata = src.clone().aux_metadata().await?.clone();
 
-            maybe_queue.insert(
-                guild_id,
-                Queue {
-                    message_id: Some(message.id),
-                    ..queue
-                },
-            );
+            if let Some(message_id) = existing_queue.message_id {
+                existing_queue.queue.push(metadata);
+
+                let _ = ctx
+                    .http
+                    .edit_message(channel_id, message_id, &to_embed(&existing_queue), vec![])
+                    .await?;
+            } else {
+                existing_queue.queue.push(metadata);
+
+                let message = ctx
+                    .http
+                    .send_message(channel_id, vec![], &to_embed(&existing_queue))
+                    .await?;
+
+                existing_queue.message_id = Some(message.id);
+            }
+
+            // Attach an event handler to see notifications of all track errors.
+            let mut handler = handler_lock.lock().await;
+
+            handler.enqueue_with_preload(src.into(), Duration::from_secs(10).into());
+
+            if should_delete {
+                if let Interaction::Command(command) = interaction {
+                    // Delete ephemeral response
+                    command.delete_response(ctx).await?;
+                    return Ok(false);
+                }
+
+                return Ok(should_delete);
+            }
+
+            return Ok(should_delete);
         }
-    } else {
-        let queue = Queue {
-            did_skip: false,
-            repeat: false,
-            pause: false,
-            playing_index: 0,
-            message_id: None,
-            queue: vec![metadata],
-        };
 
-        let message = ctx
-            .http
-            .send_message(channel_id, vec![], &to_embed(&queue))
-            .await?;
-
-        maybe_queue.insert(
-            guild_id,
-            Queue {
-                message_id: Some(message.id),
-                ..queue
-            },
-        );
+        return Err(BeatError::Stopping);
     }
 
-    // Attach an event handler to see notifications of all track errors.
-    let mut handler = handler_lock.lock().await;
-
-    handler.enqueue_with_preload(src.into(), Duration::from_secs(10).into());
-
-    Ok(())
+    Ok(should_delete)
 }
 
 #[async_trait]
@@ -407,7 +404,11 @@ impl EventHandler for OnTrackEnd {
                         println!("Tracklist removed for guild {:?}", self.guild_id);
 
                         // Remove local data
-                        maybe_queue.remove(&self.guild_id);
+                        maybe_queue
+                            .get_mut(&self.guild_id)
+                            .ok_or(BeatError::NoQueue)
+                            .unwrap_or(&mut Queue::default())
+                            .reset_for_play();
                     }
                 } else {
                     println!("Not the last sound, should increment playing index");

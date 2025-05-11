@@ -29,6 +29,8 @@ pub async fn run(
     interaction: &Interaction,
     options: &[ResolvedOption<'_>],
 ) -> Result<(), BeatError> {
+    let mut should_delete = true;
+
     if let Some(ResolvedOption {
         value: ResolvedValue::String(name),
         ..
@@ -105,7 +107,15 @@ pub async fn run(
                     println!("Tracklist removed for guild {:?}", guild_id);
 
                     // Remove local data
-                    maybe_queue.remove(&guild_id);
+                    maybe_queue
+                        .get_mut(&guild_id)
+                        .ok_or(BeatError::NoQueue)?
+                        .reset();
+
+                    maybe_queue
+                        .get_mut(&guild_id)
+                        .ok_or(BeatError::NoQueue)?
+                        .stopping = false
                 }
             };
 
@@ -118,28 +128,32 @@ pub async fn run(
             create_dir_all(dir_name.clone())?;
             let file_name = format!("{}/{}.playlist", dir_name, name);
             let content = fs::read_to_string(file_name)?;
-            let urls = content.split("\n");
+            let urls = content.split("\n").collect::<Vec<&str>>();
 
-            for url in urls {
-                insert_track(
+            for i in 0..urls.len() {
+                should_delete = insert_track(
                     ctx,
+                    interaction,
                     guild_id,
                     channel_id,
-                    String::from(url),
+                    String::from(urls[i]),
                     manager.get(guild_id).ok_or(BeatError::NoManager)?,
                     false,
+                    i == 0,
                     http_client.clone(),
                 )
                 .await
                 // Ignore error in a playlist, keep loading next ones
-                .unwrap_or(());
+                .unwrap_or(false);
             }
         }
     }
 
     if let Interaction::Command(command) = interaction {
         // Delete ephemeral response
-        command.delete_response(ctx).await?;
+        if (should_delete) {
+            command.delete_response(ctx).await?;
+        }
     }
     Ok(())
 }

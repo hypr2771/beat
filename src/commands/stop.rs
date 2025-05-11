@@ -1,5 +1,5 @@
-use crate::QueueKey;
 use crate::errors::errors::BeatError;
+use crate::QueueKey;
 use serenity::all::{Interaction, MessageId};
 use serenity::builder::CreateCommand;
 use serenity::client::Context;
@@ -43,7 +43,7 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
         }
 
         // Delete Beat data for the guild
-        maybe_queue.remove(&guild_id);
+        maybe_queue.get_mut(&guild_id).ok_or(BeatError::NoQueue)?.reset();
 
         // Disconnect and clear Songbird for the guild
         let manager = songbird::get(ctx)

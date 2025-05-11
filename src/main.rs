@@ -49,6 +49,7 @@ struct Queue {
     did_skip: bool,
     pause: bool,
     repeat: bool,
+    stopping: bool,
     playing_index: usize,
     message_id: Option<MessageId>,
     queue: Vec<AuxMetadata>,
@@ -57,6 +58,34 @@ struct Queue {
 impl Queue {
     pub fn is_last(&self) -> bool {
         self.playing_index + 1 >= self.queue.len()
+    }
+    pub fn reset(&mut self) {
+        let default = Self::default();
+        self.did_skip = default.did_skip;
+        self.repeat = default.repeat;
+        self.pause = default.pause;
+        self.stopping = default.stopping;
+        self.playing_index = default.playing_index;
+        self.message_id = default.message_id;
+        self.queue = default.queue;
+    }
+    pub fn reset_for_play(&mut self) {
+        self.reset();
+        self.stopping = false;
+    }
+}
+
+impl Default for Queue {
+    fn default() -> Self {
+        Queue {
+            did_skip: false,
+            repeat: false,
+            pause: false,
+            stopping: true,
+            playing_index: 0,
+            message_id: None,
+            queue: vec![],
+        }
     }
 }
 
@@ -70,6 +99,19 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
+    async fn cache_ready(&self, ctx: Context, guilds: Vec<GuildId>) {
+        for guild in guilds {
+            ctx.data
+                .write()
+                .await
+                .get::<QueueKey>()
+                .unwrap()
+                .write()
+                .await
+                .insert(guild, Queue::default());
+        }
+    }
+
     async fn ready(&self, ctx: Context, ready: Ready) {
         println!("{} is connected!", ready.user.name);
 

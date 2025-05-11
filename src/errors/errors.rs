@@ -11,6 +11,7 @@ pub enum BeatError {
     NoSongbird,
     NoGuild,
     NoQueues,
+    NoQueue,
     NoManager,
     NoHttp,
     NoPreviousTrack,
@@ -18,6 +19,7 @@ pub enum BeatError {
     NoCurrentTrack,
     NoCurrentSourceUrl,
     NoValidCommand,
+    Stopping,
 }
 
 impl Display for BeatError {
@@ -27,6 +29,7 @@ impl Display for BeatError {
             Self::NoSongbird => f.write_str("No Songbird for that context"),
             Self::NoGuild => f.write_str("No guild ID on that interaction"),
             Self::NoQueues => f.write_str("Queues not initialized"),
+            Self::NoQueue => f.write_str("No queue for this guild"),
             Self::NoManager => f.write_str("No active connection"),
             Self::NoHttp => f.write_str("No HTTP client"),
             Self::NoPreviousTrack => f.write_str("No previous track to load"),
@@ -34,6 +37,7 @@ impl Display for BeatError {
             Self::NoCurrentTrack => f.write_str("No current track to load"),
             Self::NoCurrentSourceUrl => f.write_str("Current track has no source URL"),
             Self::NoValidCommand => f.write_str("Not a valid command"),
+            Self::Stopping => f.write_str("Bot is stopping, should stop handling new songs"),
         }
     }
 }
