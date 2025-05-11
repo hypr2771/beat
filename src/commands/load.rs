@@ -151,7 +151,7 @@ pub async fn run(
 
     if let Interaction::Command(command) = interaction {
         // Delete ephemeral response
-        if (should_delete) {
+        if should_delete {
             command.delete_response(ctx).await?;
         }
     }
