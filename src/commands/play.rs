@@ -278,8 +278,8 @@ pub async fn insert_track(
                     "\"webm[abr>0]/bestaudio/best\"".into(),
                     "-R".into(),
                     "infinite".into(),
-                    "--extractor-args".into(),
-                    "youtube:player-client=tv".into(),
+//                    "--extractor-args".into(),
+//                    "youtube:player-client=tv".into(),
                 ])
             } else {
                 YoutubeDl::new(http_client, url.clone()).user_args(vec![
@@ -288,8 +288,8 @@ pub async fn insert_track(
                     "\"webm[abr>0]/bestaudio/best\"".into(),
                     "-R".into(),
                     "infinite".into(),
-                    "--extractor-args".into(),
-                    "youtube:player-client=tv".into(),
+//                    "--extractor-args".into(),
+//                    "youtube:player-client=tv".into(),
                 ])
             };
 

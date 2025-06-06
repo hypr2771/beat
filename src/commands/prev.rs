@@ -69,8 +69,8 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                         "infinite".into(),
                         "--ignore-config".into(),
                         "--no-warnings".into(),
-                        "--extractor-args".into(),
-                        "youtube:player-client=tv".into(),
+//                        "--extractor-args".into(),
+//                        "youtube:player-client=tv".into(),
                         "--cache-dir".into(),
                         "./yt-dlp-cache".into(),
                     ])
@@ -95,8 +95,8 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                         "infinite".into(),
                         "--ignore-config".into(),
                         "--no-warnings".into(),
-                        "--extractor-args".into(),
-                        "youtube:player-client=tv".into(),
+//                        "--extractor-args".into(),
+//                        "youtube:player-client=tv".into(),
                         "--cache-dir".into(),
                         "./yt-dlp-cache".into(),
                     ])
@@ -163,8 +163,8 @@ pub async fn run(ctx: &Context, interaction: &Interaction) -> Result<(), BeatErr
                         "infinite".into(),
                         "--ignore-config".into(),
                         "--no-warnings".into(),
-                        "--extractor-args".into(),
-                        "youtube:player-client=tv".into(),
+//                        "--extractor-args".into(),
+//                        "youtube:player-client=tv".into(),
                         "--cache-dir".into(),
                         "./yt-dlp-cache".into(),
                     ])
