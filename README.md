@@ -1,5 +1,5 @@
 Inspired by [parrot](https://github.com/aquelemiguel/parrot).
-Removed multiple message and response to avoid notifications and spamming channels.
+Removed multiple message and response to avoid notifications and spamming channels. Can create playlists and reload them, and has a previous feature.
 
 ## To do
 
