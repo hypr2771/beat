@@ -1,0 +1,14 @@
+[Unit]
+Description=Beat Bot (Rust) service
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+Environment="DISCORD_TOKEN=TOKEN" "DISCORD_APP_ID=APP_ID" "PATH=/home/pi/.cargo/bin:/home/pi/.deno/bin:/usr/local/bin:/usr/bin:/bin:/usr/games:/home/pi/Workspace/Bot/yt-dlp"
+ExecStart=/home/pi/Workspace/Bot/beat/target/release/beat
+WorkingDirectory=/home/pi/Workspace/Bot
+User=pi
+
+[Install]
+WantedBy=multi-user.target
