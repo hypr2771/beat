@@ -7,7 +7,7 @@ This project requires OpenSSL library at compile time. You will want to install 
 
 ```sh
 sudo apt-get update
-sudo apt-get install libssl-dev
+sudo apt-get install libssl-dev cmake
 cargo build --release
 ```
 
