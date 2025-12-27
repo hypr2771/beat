@@ -11,6 +11,18 @@ sudo apt-get install libssl-dev cmake
 cargo build --release
 ```
 
+We also require `yt-dlp`:
+
+```sh
+mkdir -p yt-dlp
+cd yt-dlp
+curl https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O
+echo "PATH=$PATH:$(PWD)/yt-dlp" >> ~/.zshrc
+
+source ~/.zshrc
+yt-dlp -U
+```
+
 ## To do
 
 - [ ] Separate between major errors which should return directly and minor errors for which a simple warning message should be issued (failed to update queue message should not be a major error)
